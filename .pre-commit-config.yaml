@@ -1,0 +1,19 @@
+---
+- repo: git://github.com/pre-commit/pre-commit-hooks
+  sha: v1.4.0
+  hooks:
+    - id: autopep8-wrapper
+    - id: check-merge-conflict
+    - id: check-yaml
+    - id: end-of-file-fixer
+    - id: flake8
+    - id: requirements-txt-fixer
+    - id: trailing-whitespace
+- repo: git://github.com/detailyang/pre-commit-shell
+  sha: 1.0.2
+  hooks:
+    - id: shell-lint
+- repo: git://github.com/speshak/pre-commit-cfn-lint
+  sha: master
+  hooks:
+    - id: cfnlint
