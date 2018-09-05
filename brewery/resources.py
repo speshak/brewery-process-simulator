@@ -33,3 +33,14 @@ class Chiller(object):
 
     def chill(self, volume):
         yield self.env.timeout(volume / self.feed_rate)
+
+
+class Batch(object):
+    """Representation of a batch"""
+
+    def __init__(self):
+        self.name = None
+        self.batch_size = None
+        self.boil_time = None
+        self.boil_volume = None
+        self.mash_volume = None
