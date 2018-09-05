@@ -44,3 +44,7 @@ class Batch(object):
         self.boil_time = None
         self.boil_volume = None
         self.mash_volume = None
+
+    def brew(self, env, brewery):
+        print("Brewing %s" % self.name)
+        yield env.timeout(10)
