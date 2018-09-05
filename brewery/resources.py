@@ -22,3 +22,14 @@ class HERMS(WaterVessel):
 
         self.hlt_fill_volume = hlt_fill_volume
         self.strike_volume = strike_volume
+
+
+class Chiller(object):
+    """Representation of a chiller"""
+
+    def __init__(self, env):
+        self.env = env
+        self.feed_rate = 10  # rate at which liquid runs through the chiller
+
+    def chill(self, volume):
+        yield self.env.timeout(volume / self.feed_rate)
