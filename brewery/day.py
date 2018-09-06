@@ -1,19 +1,27 @@
+"""API interactions."""
 import logging
-import requests
 import os
+
+import requests
+
 from .resources import Batch
 
 
 class BrewDayLoader:
-    """Load brew day batches from the Barnweiser data API"""
+    """Load brew day batches from the Barnweiser data API."""
 
     def __init__(self):
+        """Constructor."""
         self.base_url = os.getenv('BARNWEISER_API',
                                   'https://api-prod.barnweiser.com')
         self.logger = logging.getLogger(__name__)
 
     def load_day(self, date):
-        """Load batches for a day"""
+        """
+        Load batches for a day.
+
+        date - ISO8601 formatted date
+        """
         data = self.fetch_day_data(date)
         batches = []
 
@@ -32,17 +40,29 @@ class BrewDayLoader:
         return batches
 
     def fetch_day_data(self, date):
-        """Get a day's batches from the data API"""
+        """
+        Get a day's batches from the data API.
+
+        date - ISO8601 formatted date
+        """
         self.logger.info("Fetching data for %s" % date)
         res = requests.get("%s/brewday/%s" % (self.base_url, date))
         res.raise_for_status()
         return res.json()
 
     def sum_mash_time(self, recipe):
-        """Sum up the total time of all mash steps in a recipe"""
+        """
+        Sum up the total time of all mash steps in a recipe.
+
+        recipe - Parsed recipe object
+        """
         try:
             # holy deep structure, batman
             steps = recipe['F_R_MASH']['steps']['Data']['MashStep']
-            return sum(i['F_MS_STEP_TIME'] for i in steps)
+
+            if isinstance(steps, (list,)):
+                return sum(i['F_MS_STEP_TIME'] for i in steps)
+            else:
+                return steps['F_MS_STEP_TIME']
         except KeyError:
             return 0
