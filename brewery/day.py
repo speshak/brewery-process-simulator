@@ -1,11 +1,13 @@
 import logging
 import requests
+import os
 from .resources import Batch
 
 
 class BrewDayLoader:
     def __init__(self):
-        self.base_url = 'https://api-prod.barnweiser.com'
+        self.base_url = os.getenv('BARNWEISER_API',
+                                  'https://api-prod.barnweiser.com')
         self.logger = logging.getLogger(__name__)
 
     def load_day(self, date):
