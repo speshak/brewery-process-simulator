@@ -60,6 +60,7 @@ class Batch(object):
 
     def __init__(self):
         self.name = None
+        self.recipe_type = None
         self.batch_size = None
         self.boil_time = None
         self.boil_volume = None
@@ -73,6 +74,15 @@ class Batch(object):
 
     def brew(self, env, brewery):
         """Simulate a brew of this batch"""
+        if self.recipe_type == "Extract":
+            for i in self.brew_extract(env, brewery):
+                yield i
+        else:
+            for i in self.brew_ag(env, brewery):
+                yield i
+
+    def brew_ag(self, env, brewery):
+        """Simulate an all grain brew of this batch"""
         herms_req = brewery.herms.request()
         yield herms_req
         # Python3.3 allows "yield from self.mash(env)", but that breaks
@@ -91,6 +101,25 @@ class Batch(object):
 
         # All done with the HERMS
         brewery.herms.release(herms_req)
+
+        for i in self.boil(env):
+            yield i
+
+        # Get a chiller
+        chiller_req = brewery.chiller.request()
+        yield chiller_req
+        for i in self.chill(env):
+            yield i
+
+        # Done with the chiller & the kettle
+        brewery.kettles.release(kettle_req)
+        brewery.chiller.release(chiller_req)
+
+    def brew_extract(self, env, brewery):
+        """Simulate an extract brew of this batch"""
+        # Get a kettle
+        kettle_req = brewery.kettles.request()
+        yield kettle_req
 
         for i in self.boil(env):
             yield i
