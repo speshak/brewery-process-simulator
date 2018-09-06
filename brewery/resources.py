@@ -95,8 +95,11 @@ class Batch(object):
         self.mash_volume = None
         self.action_log = []
 
-    def _log(self, action, time):
+    def _log(self, action, time=None):
         """Write an event entry to the log."""
+        if not time:
+            time = self.env.now
+
         print("%s -  %s at %d" % (self.name, action, time))
         self.action_log.append({"time": time, "action": action})
 
@@ -178,27 +181,27 @@ class Batch(object):
 
     def mash(self):
         """Mash the batch."""
-        self._log("mash start", self.env.now)
+        self._log("mash start")
         yield self.env.timeout(self.mash_time)
-        self._log("mash end", self.env.now)
+        self._log("mash end")
 
     def sparge(self):
         """Sparge the mash."""
-        self._log("sparge start", self.env.now)
+        self._log("sparge start")
         yield self.env.timeout(45)
-        self._log("sparge end", self.env.now)
+        self._log("sparge end")
 
     def boil(self):
         """Boil the batch."""
-        self._log("boil start", self.env.now)
+        self._log("boil start")
         yield self.env.timeout(self.boil_time)
-        self._log("boil end", self.env.now)
+        self._log("boil end")
 
     def chill(self):
         """Chill the batch."""
-        self._log("chill start", self.env.now)
+        self._log("chill start")
         yield self.env.timeout(self.boil_time)
-        self._log("chill end", self.env.now)
+        self._log("chill end")
 
 
 class Brewery(object):
