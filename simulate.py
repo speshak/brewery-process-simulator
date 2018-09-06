@@ -15,7 +15,7 @@ import simpy
 from docopt import docopt
 
 import brewery.resources
-from brewery.day import BrewDayLoader
+from brewery.api import BrewDayLoader
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
