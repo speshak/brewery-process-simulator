@@ -67,27 +67,67 @@ class Batch(object):
         self.action_log = []
 
     def _log(self, action, time):
+        """Write an event entry to the log"""
         print("%s -  %s at %d" % (self.name, action, time))
         self.action_log.append({"time": time, "action": action})
 
     def brew(self, env, brewery):
-        with brewery.herms.request() as herms_req:
-            yield herms_req
+        """Simulate a brew of this batch"""
+        herms_req = brewery.herms.request()
+        yield herms_req
+        # Python3.3 allows "yield from self.mash(env)", but that breaks
+        # flake8 checking.  Right now this slightly more verbose form is
+        # preferable if I can retain good linting
+        for i in self.mash(env):
+            yield i
 
-            self._log("mash start", env.now)
-            yield env.timeout(self.mash_time)
+        # Get a kettle for the sparge
+        kettle_req = brewery.kettles.request()
+        yield kettle_req
 
-        with brewery.kettles.request() as kettle_req:
-            yield kettle_req
+        # Run the sparge
+        for i in self.sparge(env):
+            yield i
 
-            self._log("boil start", env.now)
-            yield env.timeout(self.boil_time)
+        # All done with the HERMS
+        brewery.herms.release(herms_req)
 
-        with brewery.chiller.request() as chiller_req:
-            yield chiller_req
+        for i in self.boil(env):
+            yield i
 
-            self._log("chil start", env.now)
-            yield env.timeout(self.boil_time)
+        # Get a chiller
+        chiller_req = brewery.chiller.request()
+        yield chiller_req
+        for i in self.chill(env):
+            yield i
+
+        # Done with the chiller & the kettle
+        brewery.kettles.release(kettle_req)
+        brewery.chiller.release(chiller_req)
+
+    def mash(self, env):
+        """Mash the batch"""
+        self._log("mash start", env.now)
+        yield env.timeout(self.mash_time)
+        self._log("mash end", env.now)
+
+    def sparge(self, env):
+        """Sparge the mash"""
+        self._log("sparge start", env.now)
+        yield env.timeout(45)
+        self._log("sparge end", env.now)
+
+    def boil(self, env):
+        """Boil the batch"""
+        self._log("boil start", env.now)
+        yield env.timeout(self.boil_time)
+        self._log("boil end", env.now)
+
+    def chill(self, env):
+        """Chill the batch"""
+        self._log("chil start", env.now)
+        yield env.timeout(self.boil_time)
+        self._log("chil end", env.now)
 
 
 class Brewery(object):
