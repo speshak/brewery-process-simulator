@@ -9,6 +9,7 @@
     - id: flake8
     - id: requirements-txt-fixer
     - id: trailing-whitespace
+    - id: debug-statements
 - repo: git://github.com/detailyang/pre-commit-shell
   sha: 1.0.2
   hooks:
@@ -17,3 +18,11 @@
   sha: master
   hooks:
     - id: cfnlint
+- repo: git://github.com/FalconSocial/pre-commit-mirrors-pep257
+  sha: 'v0.3.3'
+  hooks:
+    - id: pep257
+- repo: https://github.com/asottile/reorder_python_imports
+  rev: v1.1.1
+  hooks:
+    - id: reorder-python-imports
