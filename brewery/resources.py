@@ -154,9 +154,9 @@ class Batch(object):
 
     def chill(self, env):
         """Chill the batch"""
-        self._log("chil start", env.now)
+        self._log("chill start", env.now)
         yield env.timeout(self.boil_time)
-        self._log("chil end", env.now)
+        self._log("chill end", env.now)
 
 
 class Brewery(object):
