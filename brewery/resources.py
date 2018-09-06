@@ -64,13 +64,30 @@ class Batch(object):
         self.boil_time = None
         self.boil_volume = None
         self.mash_volume = None
+        self.action_log = []
+
+    def _log(self, action, time):
+        print("%s -  %s at %d" % (self.name, action, time))
+        self.action_log.append({"time": time, "action": action})
 
     def brew(self, env, brewery):
-        with brewery.herms.request() as request:
-            yield request
+        with brewery.herms.request() as herms_req:
+            yield herms_req
 
-            print("Brewing %s" % self.name)
-            yield env.timeout(10)
+            self._log("mash start", env.now)
+            yield env.timeout(self.mash_time)
+
+        with brewery.kettles.request() as kettle_req:
+            yield kettle_req
+
+            self._log("boil start", env.now)
+            yield env.timeout(self.boil_time)
+
+        with brewery.chiller.request() as chiller_req:
+            yield chiller_req
+
+            self._log("chil start", env.now)
+            yield env.timeout(self.boil_time)
 
 
 class Brewery(object):
@@ -81,8 +98,3 @@ class Brewery(object):
         self.kettles = simpy.Resource(env, 2)
         self.herms = simpy.Resource(env, 1)
         self.chiller = simpy.Resource(env, 1)
-
-    def brew(self, batch):
-        yield self.env.timeout(10)
-        yield batch.brew(self)
-        print("Batch %s done at %.2f" % (batch.name, self.env.now))
