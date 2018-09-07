@@ -104,7 +104,7 @@ class Batch(object):
             (self.batch_size/128),
             self.recipe_type)
 
-    def _log(self, step, start, end):
+    def _log_action(self, step, start, end):
         """Write an event entry to the log."""
         self.action_log.append({
             "batch": str(self),
@@ -184,27 +184,28 @@ class Batch(object):
         """Mash the batch."""
         start = self.env.now
         yield self.env.timeout(self.mash_time)
-        self._log("mash", start, self.env.now)
+        self._log_action("mash", start, self.env.now)
 
     def sparge(self):
         """Sparge the mash."""
         start = self.env.now
         yield self.env.timeout(45)
-        self._log("sparge", start, self.env.now)
+        self._log_action("sparge", start, self.env.now)
 
     def boil(self):
         """Boil the batch."""
         start = self.env.now
         yield self.env.timeout(self.boil_time)
-        self._log("boil", start, self.env.now)
+        self._log_action("boil", start, self.env.now)
 
     def chill(self):
         """Chill the batch."""
         start = self.env.now
         chiller = Chiller(self.env)
 
-        self._log("chill", start, self.env.now)
         yield self.env.process(chiller.chill(self.boil_volume))
+
+        self._log_action("chill", start, self.env.now)
 
 
 class Brewery(object):
