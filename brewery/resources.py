@@ -144,8 +144,7 @@ class Batch(object):
         yield self.env.process(self.mash())
 
         # Get a kettle for the sparge
-        kettle_req = brewery.kettles.request()
-        yield kettle_req
+        kettle = yield brewery.kettles.get()
 
         # Run the sparge
         yield self.env.process(self.sparge())
@@ -161,7 +160,7 @@ class Batch(object):
         yield self.env.process(self.chill())
 
         # Done with the chiller & the kettle
-        brewery.kettles.release(kettle_req)
+        brewery.kettles.put(kettle)
         brewery.chiller.release(chiller_req)
 
     def brew_extract(self, brewery):
@@ -171,8 +170,7 @@ class Batch(object):
         brewery - Brewery resource
         """
         # Get a kettle
-        kettle_req = brewery.kettles.request()
-        yield kettle_req
+        kettle = yield brewery.kettles.get()
 
         yield self.env.process(self.boil())
 
@@ -182,7 +180,7 @@ class Batch(object):
         yield self.env.process(self.chill())
 
         # Done with the chiller & the kettle
-        brewery.kettles.release(kettle_req)
+        brewery.kettles.put(kettle)
         brewery.chiller.release(chiller_req)
 
     def mash(self):
@@ -220,13 +218,21 @@ class Brewery(object):
     This mainly is a container to hold the resources used by batches.
     """
 
-    def __init__(self, env):
+    def __init__(self, env, kettle_count):
         """
         Constructor.
 
         env - SimPy environment
         """
         self.env = env
-        self.kettles = simpy.Resource(env, 2)
         self.herms = simpy.Resource(env, 1)
         self.chiller = simpy.Resource(env, 1)
+
+        self.kettles = simpy.Store(env, kettle_count)
+        self._add_kettles(kettle_count)
+
+    def _add_kettles(self, capacity):
+        for i in range(capacity):
+            kettle = Kettle()
+            kettle.name = "Kettle %d" % (i + 1)
+            self.kettles.put(kettle)

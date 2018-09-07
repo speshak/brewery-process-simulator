@@ -40,7 +40,7 @@ def run_simulation(arg_list):
 
     for batches in batch_arrangements:
         env = simpy.Environment()
-        system = brewery.resources.Brewery(env)
+        system = brewery.resources.Brewery(env, 2)
 
         for batch in batches:
             env.process(batch.brew(env, system))
