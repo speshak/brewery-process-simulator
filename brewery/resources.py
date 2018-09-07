@@ -78,6 +78,7 @@ class Chiller(object):
 
         volume - volume of water
         """
+        print("Chilling for %d minutes" % ((volume / self.feed_rate)))
         yield self.env.timeout(volume / self.feed_rate)
 
 
@@ -200,7 +201,10 @@ class Batch(object):
     def chill(self):
         """Chill the batch."""
         self._log("chill start")
-        yield self.env.timeout(self.boil_time)
+        chiller = Chiller(self.env)
+        for i in chiller.chill(self.boil_volume):
+            yield i
+
         self._log("chill end")
 
 
