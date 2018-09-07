@@ -96,6 +96,13 @@ class Batch(object):
         self.mash_volume = None
         self.action_log = []
 
+    def __str__(self):
+        """String representation."""
+        return "%s - %sGal - %s" % (
+            self.name,
+            (self.batch_size/128),
+            self.recipe_type)
+
     def _log(self, action, time=None):
         """Write an event entry to the log."""
         if not time:
@@ -111,6 +118,7 @@ class Batch(object):
         env - SimPy Environment
         """
         self.env = env
+        print("Brewing %s" % self)
 
         if self.recipe_type == "Extract":
             for i in self.brew_extract(brewery):
