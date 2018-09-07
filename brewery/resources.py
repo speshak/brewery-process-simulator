@@ -101,6 +101,7 @@ class Batch(object):
         self.boil_volume = None
         self.mash_volume = None
         self.action_log = []
+        self.resource_log = []
 
     def __str__(self):
         """String representation."""
@@ -116,6 +117,15 @@ class Batch(object):
             "step": step,
             "start": start,
             "end": end,
+        })
+
+    def _log_resource(self, resource, state, time):
+        """Write resource usage to the log."""
+        self.resource_log.append({
+            "batch": str(self),
+            "resource": resource,
+            "state": state,
+            "time": time,
         })
 
     def brew(self, env, brewery):
@@ -140,28 +150,34 @@ class Batch(object):
         """
         herms_req = brewery.herms.request()
         yield herms_req
+        self._log_resource("HERMS", "use", self.env.now)
 
         yield self.env.process(self.mash())
 
         # Get a kettle for the sparge
         kettle = yield brewery.kettles.get()
+        self._log_resource(str(kettle), "use", self.env.now)
 
         # Run the sparge
         yield self.env.process(self.sparge())
 
         # All done with the HERMS
         brewery.herms.release(herms_req)
+        self._log_resource("HERMS", "release", self.env.now)
 
         yield self.env.process(self.boil())
 
         # Get a chiller
         chiller_req = brewery.chiller.request()
         yield chiller_req
+        self._log_resource("Chiller", "use", self.env.now)
         yield self.env.process(self.chill())
 
         # Done with the chiller & the kettle
         brewery.kettles.put(kettle)
         brewery.chiller.release(chiller_req)
+        self._log_resource(str(kettle), "release", self.env.now)
+        self._log_resource("Chiller", "release", self.env.now)
 
     def brew_extract(self, brewery):
         """
@@ -171,17 +187,21 @@ class Batch(object):
         """
         # Get a kettle
         kettle = yield brewery.kettles.get()
+        self._log_resource(str(kettle), "use", self.env.now)
 
         yield self.env.process(self.boil())
 
         # Get a chiller
         chiller_req = brewery.chiller.request()
         yield chiller_req
+        self._log_resource("Chiller", "use", self.env.now)
         yield self.env.process(self.chill())
 
         # Done with the chiller & the kettle
         brewery.kettles.put(kettle)
         brewery.chiller.release(chiller_req)
+        self._log_resource(str(kettle), "release", self.env.now)
+        self._log_resource("Chiller", "release", self.env.now)
 
     def mash(self):
         """Mash the batch."""
