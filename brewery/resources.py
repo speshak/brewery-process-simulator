@@ -123,11 +123,9 @@ class Batch(object):
         print("Brewing %s" % self)
 
         if self.recipe_type == "Extract":
-            for i in self.brew_extract(brewery):
-                yield i
+            yield self.env.process(self.brew_extract(brewery))
         else:
-            for i in self.brew_ag(brewery):
-                yield i
+            yield self.env.process(self.brew_ag(brewery))
 
     def brew_ag(self, brewery):
         """
@@ -137,31 +135,25 @@ class Batch(object):
         """
         herms_req = brewery.herms.request()
         yield herms_req
-        # Python3.3 allows "yield from self.mash(env)", but that breaks
-        # flake8 checking.  Right now this slightly more verbose form is
-        # preferable if I can retain good linting
-        for i in self.mash():
-            yield i
+
+        yield self.env.process(self.mash())
 
         # Get a kettle for the sparge
         kettle_req = brewery.kettles.request()
         yield kettle_req
 
         # Run the sparge
-        for i in self.sparge():
-            yield i
+        yield self.env.process(self.sparge())
 
         # All done with the HERMS
         brewery.herms.release(herms_req)
 
-        for i in self.boil():
-            yield i
+        yield self.env.process(self.boil())
 
         # Get a chiller
         chiller_req = brewery.chiller.request()
         yield chiller_req
-        for i in self.chill():
-            yield i
+        yield self.env.process(self.chill())
 
         # Done with the chiller & the kettle
         brewery.kettles.release(kettle_req)
@@ -177,14 +169,12 @@ class Batch(object):
         kettle_req = brewery.kettles.request()
         yield kettle_req
 
-        for i in self.boil():
-            yield i
+        yield self.env.process(self.boil())
 
         # Get a chiller
         chiller_req = brewery.chiller.request()
         yield chiller_req
-        for i in self.chill():
-            yield i
+        yield self.env.process(self.chill())
 
         # Done with the chiller & the kettle
         brewery.kettles.release(kettle_req)
@@ -212,10 +202,9 @@ class Batch(object):
         """Chill the batch."""
         start = self.env.now
         chiller = Chiller(self.env)
-        for i in chiller.chill(self.boil_volume):
-            yield i
 
         self._log("chill", start, self.env.now)
+        yield self.env.process(chiller.chill(self.boil_volume))
 
 
 class Brewery(object):
