@@ -1,4 +1,6 @@
 """Brewery process resources."""
+import math
+
 import simpy
 
 
@@ -78,8 +80,7 @@ class Chiller(object):
 
         volume - volume of water
         """
-        print("Chilling for %d minutes" % ((volume / self.feed_rate)))
-        yield self.env.timeout(volume / self.feed_rate)
+        yield self.env.timeout(int(math.ceil(volume / self.feed_rate)))
 
 
 class Batch(object):
