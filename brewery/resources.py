@@ -38,9 +38,14 @@ class WaterVessel(object):
 class Kettle(WaterVessel):
     """Representation of a boil kettle."""
 
-    def __init__(self, fill_volume, start_temp):
+    def __init__(self, fill_volume=0, start_temp=72):
         """Constructor."""
         super().__init__(self, start_temp, fill_volume)
+        self.name = None
+
+    def __str__(self):
+        """String representation."""
+        return self.name
 
 
 class HERMS(WaterVessel):
