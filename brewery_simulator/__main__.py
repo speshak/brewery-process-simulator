@@ -16,8 +16,8 @@ import sys
 import simpy
 from docopt import docopt
 
-import brewery.resources
-from brewery.api import BrewDayLoader
+from .api import BrewDayLoader
+from .resources import Brewery
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -25,22 +25,28 @@ logger.setLevel(logging.DEBUG)
 __version__ = "0.1"
 
 
-def run_simulation(arg_list):
+def main():
     """Main entrypoint."""
-    arguments = docopt(__doc__, argv=arg_list, version=__version__)
+    arguments = docopt(__doc__, argv=sys.argv[1:], version=__version__)
+    run_simulation(
+        arguments['<date>'],
+        arguments["--permutate"]
+    )
 
-    logger.info("Starting simulation")
-    batches = BrewDayLoader().load_day(arguments['<date>'])
+
+def run_simulation(date, permutate=False):
+    """Run simulation."""
+    batches = BrewDayLoader().load_day(date)
     print("Loaded %d batches" % len(batches))
 
-    if arguments["--permutate"]:
+    if permutate:
         batch_arrangements = itertools.permutations(batches)
     else:
         batch_arrangements = [batches]
 
     for batches in batch_arrangements:
         env = simpy.Environment()
-        system = brewery.resources.Brewery(env, 2)
+        system = Brewery(env, 2)
 
         for batch in batches:
             env.process(batch.brew(env, system))
@@ -49,4 +55,4 @@ def run_simulation(arg_list):
 
 
 if __name__ == '__main__':
-    run_simulation(arg_list=sys.argv[1:])
+    main()
