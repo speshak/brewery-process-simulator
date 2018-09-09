@@ -12,6 +12,7 @@ Options:
 import itertools
 import logging
 import sys
+from itertools import chain
 
 import simpy
 from docopt import docopt
@@ -28,16 +29,18 @@ __version__ = "0.1"
 def main():
     """Main entrypoint."""
     arguments = docopt(__doc__, argv=sys.argv[1:], version=__version__)
-    run_simulation(
+    log = run_simulation(
         arguments['<date>'],
         arguments["--permutate"]
     )
+
+    import pprint
+    pprint.pprint(log)
 
 
 def run_simulation(date, permutate=False):
     """Run simulation."""
     batches = BrewDayLoader().load_day(date)
-    print("Loaded %d batches" % len(batches))
 
     if permutate:
         batch_arrangements = itertools.permutations(batches)
@@ -52,6 +55,16 @@ def run_simulation(date, permutate=False):
             env.process(batch.brew(env, system))
 
         env.run()
+
+        # Collate the log
+        full_log = {
+            "actions": list(chain.from_iterable(
+                [i.action_log for i in batches])),
+            "resources": list(chain.from_iterable(
+                [i.resource_log for i in batches])),
+        }
+
+        return full_log
 
 
 if __name__ == '__main__':

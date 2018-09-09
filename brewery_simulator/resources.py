@@ -135,7 +135,6 @@ class Batch(object):
         env - SimPy Environment
         """
         self.env = env
-        print("Brewing %s" % self)
 
         if self.recipe_type == "Extract":
             yield self.env.process(self.brew_extract(brewery))
