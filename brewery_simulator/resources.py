@@ -96,6 +96,7 @@ class Batch(object):
         self.mash_temp = 154
         self.action_log = []
         self.resource_log = []
+        self.in_use_resources = {}
 
     def __str__(self):
         """String representation."""
@@ -115,12 +116,16 @@ class Batch(object):
 
     def _log_resource(self, resource, state, time):
         """Write resource usage to the log."""
-        self.resource_log.append({
-            "batch": str(self),
-            "resource": resource,
-            "state": state,
-            "time": time,
-        })
+        if state == 'use':
+            self.in_use_resources[resource] = time
+        else:
+            self.resource_log.append({
+                "batch": str(self),
+                "resource": resource,
+                "start": self.in_use_resources[resource],
+                "end": time,
+            })
+            self.in_use_resources.pop(resource, None)
 
     def brew(self, env, brewery):
         """
