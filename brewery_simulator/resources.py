@@ -7,32 +7,25 @@ import simpy
 class WaterVessel(object):
     """A vessel that holds water that is heated."""
 
-    def __init__(self, env, start_temp, volume):
+    def __init__(self, start_temp, volume):
         """
         Constructor.
 
-        env - SimPy environment.
         start_temp - Starting temperature of the vessel.
         volume - Volume of vessel.
         """
-        self.env = env
         self.cur_temp = start_temp
         self.volume = volume
 
-    def _time_until_temp(self, end_temp):
+    def time_until_temp(self, end_temp):
         """Calculate the required time until the vessel is at a temperature."""
         # TODO: use a real model for this
-        # For now assume 1deg/min rise
-        return min(0, end_temp - self.cur_temp)
+        # For now assume 2deg/min rise
+        return max(0, int(math.ceil((end_temp - self.cur_temp)/2)))
 
-    def _time_until_boil(self):
+    def time_until_boil(self):
         """Calculate the required time until the vessel is boiling."""
-        return self._time_until_temp(212)
-
-    def warm_to(self, target):
-        """Warm vessel to a target temp."""
-        print("Warming to %d" % target)
-        return self.env.timeout(self._time_until_temp(target))
+        return self.time_until_temp(212)
 
 
 class Kettle(WaterVessel):
@@ -40,7 +33,7 @@ class Kettle(WaterVessel):
 
     def __init__(self, fill_volume=0, start_temp=72):
         """Constructor."""
-        super().__init__(self, start_temp, fill_volume)
+        super().__init__(start_temp, fill_volume)
         self.name = None
 
     def __str__(self):
@@ -51,7 +44,7 @@ class Kettle(WaterVessel):
 class HERMS(WaterVessel):
     """Representation of a HERMS mash system."""
 
-    def __init__(self, env, hlt_fill_volume, strike_volume, start_temp):
+    def __init__(self, hlt_fill_volume, strike_volume, start_temp):
         """
         Constructor.
 
@@ -60,7 +53,7 @@ class HERMS(WaterVessel):
         strike_volume - The volume of water used for str
         start_temp - Starting temperature of vessel/water
         """
-        super().__init__(self, env, start_temp,
+        super().__init__(start_temp,
                          hlt_fill_volume + strike_volume)
 
         self.hlt_fill_volume = hlt_fill_volume
@@ -100,6 +93,7 @@ class Batch(object):
         self.boil_time = None
         self.boil_volume = None
         self.mash_volume = None
+        self.mash_temp = 154
         self.action_log = []
         self.resource_log = []
 
@@ -164,13 +158,17 @@ class Batch(object):
         brewery.herms.release(herms_req)
         self._log_resource("HERMS", "release", self.env.now)
 
-        yield self.env.process(self.boil())
+        kettle.cur_temp = 140
+        yield self.env.process(self.boil(kettle))
 
         # Get a chiller
         chiller_req = brewery.chiller.request()
         yield chiller_req
         self._log_resource("Chiller", "use", self.env.now)
         yield self.env.process(self.chill())
+
+        # Allow some time for cleaning kettle/chiller
+        yield self.env.timeout(10)
 
         # Done with the chiller & the kettle
         brewery.kettles.put(kettle)
@@ -188,13 +186,17 @@ class Batch(object):
         kettle = yield brewery.kettles.get()
         self._log_resource(str(kettle), "use", self.env.now)
 
-        yield self.env.process(self.boil())
+        kettle.cur_temp = 72
+        yield self.env.process(self.boil(kettle))
 
         # Get a chiller
         chiller_req = brewery.chiller.request()
         yield chiller_req
         self._log_resource("Chiller", "use", self.env.now)
         yield self.env.process(self.chill())
+
+        # Allow some time for cleaning kettle/chiller
+        yield self.env.timeout(10)
 
         # Done with the chiller & the kettle
         brewery.kettles.put(kettle)
@@ -204,6 +206,11 @@ class Batch(object):
 
     def mash(self):
         """Mash the batch."""
+        herms = HERMS(12, self.mash_volume, 72)
+        pre_mash_start = self.env.now
+        yield self.env.timeout(herms.time_until_temp(self.mash_temp))
+        self._log_action("mash_warmup", pre_mash_start, self.env.now)
+
         start = self.env.now
         yield self.env.timeout(self.mash_time)
         self._log_action("mash", start, self.env.now)
@@ -214,11 +221,18 @@ class Batch(object):
         yield self.env.timeout(45)
         self._log_action("sparge", start, self.env.now)
 
-    def boil(self):
-        """Boil the batch."""
-        start = self.env.now
+    def boil(self, kettle):
+        """Boil the batch.
+
+        kettle - Kettle object used to boil the batch.
+        """
+        pre_boil_start = self.env.now
+        yield self.env.timeout(kettle.time_until_boil())
+        self._log_action("boil_warmup", pre_boil_start, self.env.now)
+
+        boil_start = self.env.now
         yield self.env.timeout(self.boil_time)
-        self._log_action("boil", start, self.env.now)
+        self._log_action("boil", boil_start, self.env.now)
 
     def chill(self):
         """Chill the batch."""
