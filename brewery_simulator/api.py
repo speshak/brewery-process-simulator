@@ -46,7 +46,7 @@ class BrewDayLoader:
         date - ISO8601 formatted date
         """
         self.logger.info("Fetching data for %s" % date)
-        res = requests.get("%s/brewday/%s" % (self.base_url, date))
+        res = requests.get("%s/brewdays/%s" % (self.base_url, date))
         res.raise_for_status()
         return res.json()
 
