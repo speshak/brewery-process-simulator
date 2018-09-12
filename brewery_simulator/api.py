@@ -25,7 +25,7 @@ class BrewDayLoader:
         data = self.fetch_day_data(date)
         batches = []
 
-        for recipe in data:
+        for recipe in data['batches']:
             batch = Batch()
             batch.name = recipe['F_R_NAME']
             batch.boil_time = recipe['F_R_EQUIPMENT']['F_E_BOIL_TIME']
