@@ -1,6 +1,7 @@
 jupyter
-pandas
-numpy
+lmfit
 matplotlib
-statsmodels
+numpy
+pandas
 scipy
+statsmodels
