@@ -18,7 +18,11 @@ class WaterVessel(object):
         self.volume = volume
 
     def time_until_temp(self, end_temp):
-        """Calculate the required time until the vessel is at a temperature."""
+        """
+        Calculate the required time until the vessel is at a temperature.
+
+        end_temp - Target temperature.
+        """
         # TODO: use a real model for this
         # For now assume 2deg/min rise
         return max(0, int(math.ceil((end_temp - self.cur_temp)/2)))
@@ -58,6 +62,26 @@ class HERMS(WaterVessel):
 
         self.hlt_fill_volume = hlt_fill_volume
         self.strike_volume = strike_volume
+
+        # Parameters calculated from OLS of observation data
+        self.temp_beta = 0.3657
+        self.volume_beta = -1.4624
+        self.alpha = 0
+
+    def time_until_temp(self, end_temp):
+        """
+        Calculate the required time until the vessel is at a temperature.
+
+        end_temp - Target temperature.
+
+        >>> h = HERMS(13, 5.5, 72)
+        >>> h.time_until_temp(150)
+        """
+        a + b**(X['temp'])
+        return (self.alpha +
+                (self.temp_beta * end_temp) +
+                (self.volume_beta * self.volume)
+                )
 
 
 class Chiller(object):
